@@ -6,8 +6,7 @@ from app import create_app
 class HealthCheckTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.app = create_app()
-        self.app.config["TESTING"] = True
+        self.app = create_app({"TESTING": True, "DATABASE": ":memory:"})
         self.client = self.app.test_client()
 
     def test_health_returns_200(self):
