@@ -9,10 +9,10 @@ async function apiFetch(path, options = {}) {
   return res.json()
 }
 
-export function getEmployees({ page = 1, perPage = 50, search = '' } = {}) {
+export function getEmployees({ page = 1, perPage = 50, search = '' } = {}, signal) {
   const params = new URLSearchParams({ page, per_page: perPage })
   if (search) params.set('search', search)
-  return apiFetch(`/employees?${params}`)
+  return apiFetch(`/employees?${params}`, { signal })
 }
 
 export function createEmployee(data) {
@@ -35,6 +35,6 @@ export function deleteEmployee(id) {
   return apiFetch(`/employees/${id}`, { method: 'DELETE' })
 }
 
-export function getMetrics() {
-  return apiFetch('/employees/metrics')
+export function getMetrics(signal) {
+  return apiFetch('/employees/metrics', { signal })
 }
