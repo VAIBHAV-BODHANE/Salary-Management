@@ -1,0 +1,47 @@
+All user prompts from this session — Salary Management project
+==============================================================
+
+1. I want create a application for salary management. The application should use flask framework
+   and there should be a routes file which include in app. Initially there should only health
+   check api and before create api there should be unittest for that api.
+
+2. you have created base structure of this project now create API for add, view update and delete
+   for employess data form the table but before that use SQLite to store the data and create
+   schema file to create tables in SQLite under the schema folder and name the schema file as per
+   the table. First create employee table and table must have empid, full name, job title,
+   country, salary, doj and dob columns. Also create unittest case for each endpoints before
+   creating endpoints
+
+3. write a api for import files which accept multiple files and that import files should have
+   first_names.txt and last_names.txt with combination of these two files it makes fullname and
+   should insert it in fullname column and for the remaining columns api should accpet csv file
+   to fill other column respectively. and there should have check for it otherwise it should
+   retun files are missing. and also add unittest before writing this api
+
+4. and also first_names.txt, last_names.txt and csv can have atleast 10000 records so use best
+   practice and optimize the api according to the requirement
+
+5. Can provide me 10000 employe dummy details in first_names.txt, last_names.txt and
+   employee_data.csv format to import
+
+6. all backend is ready now create frontend in react. There should be a two tabs one is list of
+   employees with pagination and other tab should be metrics tab and metrics tab should have
+   minimum, maximum, average salary of employees in a country every country, Average salary for
+   the given Job Title in a country. Any other meaningful metrics you believe are helpful for
+   the user persona. And in list there should be a filter input box so that user can filter list
+   with any value of the column
+
+7. also add import functionality for the import api and also add dark mode feature and
+   reposition of metrics & employee tab make metrics tab position at 1st and employee tab at 2nd
+
+8. give me commit msg for last and second last promt
+
+9. dark mode is working properly but switching back to white mode then only lines behind graph
+   turn into white so can you please check. white mode is not working
+
+10. switching back to light mode not working still show dark theme even after clicking on
+    light mode
+
+11. can you list down all my prompt from start of this chat/session in prompt.txt
+
+12. add readme.md for how to install the application and it's prerequisites and also add architectureal diagram and also add note about prompt.txt
