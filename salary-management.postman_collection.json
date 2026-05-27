@@ -1,0 +1,173 @@
+{
+  "info": {
+    "_postman_id": "c48af451-ae5f-457b-81c6-fab52b5f8037",
+    "name": "salary-management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "14380919"
+  },
+  "item": [
+    {
+      "name": "get_employee",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://127.0.0.1:5000/employees",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "5000",
+          "path": [
+            "employees"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "create_employee",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"full_name\": \"Vaibhav Bodhane\",\n    \"job_title\": \"Software Engineer\", \n    \"country\": \"india\",\n    \"salary\": \"1700000\",\n    \"doj\": \"2023-11-22\",\n    \"dob\": \"1998-04-29\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://127.0.0.1:5000/employees",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "5000",
+          "path": [
+            "employees"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "update_employee",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"full_name\": \"Vaibhav Bodhane\",\n    \"job_title\": \"Software Engineer\", \n    \"country\": \"India\",\n    \"salary\": \"84300\",\n    \"doj\": \"2023-11-22\",\n    \"dob\": \"1998-04-29\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://127.0.0.1:5000/employees/2",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "5000",
+          "path": [
+            "employees",
+            "2"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "delete_employee",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://127.0.0.1:5000/employees/1",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "5000",
+          "path": [
+            "employees",
+            "1"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "import_empoyee",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "first_names",
+              "type": "file",
+              "id": 6,
+              "fileUploadError": "",
+              "src": [
+                "/Users/apex/Documents/interview_task/salary_management/first_names.txt"
+              ]
+            },
+            {
+              "key": "last_names",
+              "type": "file",
+              "id": 7,
+              "fileUploadError": "",
+              "src": [
+                "/Users/apex/Documents/interview_task/salary_management/last_names.txt"
+              ]
+            },
+            {
+              "key": "employee_data",
+              "type": "file",
+              "id": 8,
+              "fileUploadError": "",
+              "src": [
+                "/Users/apex/Documents/interview_task/salary_management/employee_data.csv"
+              ]
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://127.0.0.1:5000/employees/import",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "5000",
+          "path": [
+            "employees",
+            "import"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
