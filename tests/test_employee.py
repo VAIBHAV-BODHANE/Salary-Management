@@ -69,7 +69,8 @@ class EmployeeListTestCase(unittest.TestCase):
         response = self.client.get("/employees")
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.data)
-        self.assertEqual(data, [])
+        self.assertEqual(data["employees"], [])
+        self.assertEqual(data["total"], 0)
 
     def test_list_employees_after_create_returns_one_record(self):
         self.client.post(
@@ -79,9 +80,10 @@ class EmployeeListTestCase(unittest.TestCase):
         )
         response = self.client.get("/employees")
         data = json.loads(response.data)
-        self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]["full_name"], VALID_EMPLOYEE["full_name"])
-        self.assertIn("empid", data[0])
+        employees = data["employees"]
+        self.assertEqual(len(employees), 1)
+        self.assertEqual(employees[0]["full_name"], VALID_EMPLOYEE["full_name"])
+        self.assertIn("empid", employees[0])
 
 
 class EmployeeGetOneTestCase(unittest.TestCase):

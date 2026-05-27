@@ -1,5 +1,6 @@
 import os
 from flask import Flask
+from flask_cors import CORS
 from db import init_db, close_db
 
 
@@ -20,6 +21,8 @@ def create_app(test_config=None):
 
     from routes import register_blueprints
     register_blueprints(app)
+
+    CORS(app, origins=["http://localhost:5173"])
 
     return app
 

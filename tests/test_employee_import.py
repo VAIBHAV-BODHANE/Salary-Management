@@ -230,7 +230,7 @@ class TestEmployeeImportSuccess(unittest.TestCase):
         self.client.post("/employees/import", data=files)
 
         response = self.client.get("/employees")
-        employees = json.loads(response.data)
+        employees = json.loads(response.data)["employees"]
 
         self.assertEqual(employees[0]["full_name"], "Alice Smith")
         self.assertEqual(employees[1]["full_name"], "Bob Johnson")
@@ -241,7 +241,7 @@ class TestEmployeeImportSuccess(unittest.TestCase):
         self.client.post("/employees/import", data=files)
 
         response = self.client.get("/employees")
-        employees = json.loads(response.data)
+        employees = json.loads(response.data)["employees"]
 
         self.assertEqual(employees[0]["job_title"], "Engineer")
         self.assertEqual(employees[0]["country"], "India")
@@ -254,7 +254,7 @@ class TestEmployeeImportSuccess(unittest.TestCase):
         self.client.post("/employees/import", data=files)
 
         response = self.client.get("/employees")
-        employees = json.loads(response.data)
+        employees = json.loads(response.data)["employees"]
 
         # Verify order is preserved (by index matching)
         self.assertEqual(employees[0]["full_name"], "Alice Smith")
@@ -323,7 +323,7 @@ Manager,USA,95000.00,2021-01-10,1988-05-12"""
         self.assertEqual(response.status_code, 201)
 
         response = self.client.get("/employees")
-        employees = json.loads(response.data)
+        employees = json.loads(response.data)["employees"]
         # Names should be stripped (leading/trailing whitespace removed)
         self.assertEqual(employees[0]["full_name"], "Alice Smith")
         self.assertEqual(employees[1]["full_name"], "Bob Johnson")
@@ -340,7 +340,7 @@ Manager,France,95000.00,2021-01-10,1988-05-12"""
         self.assertEqual(response.status_code, 201)
 
         response = self.client.get("/employees")
-        employees = json.loads(response.data)
+        employees = json.loads(response.data)["employees"]
         self.assertEqual(employees[0]["full_name"], "José García")
         self.assertEqual(employees[1]["full_name"], "Marie-Jeanne D'Arcy")
 

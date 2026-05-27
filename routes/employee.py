@@ -1,4 +1,5 @@
 import csv
+import math
 from flask import Blueprint, jsonify, request, abort
 from db import get_db
 
@@ -35,9 +36,39 @@ def create_employee():
 
 @employee_bp.route("", methods=["GET"])
 def list_employees():
+    page = max(1, request.args.get("page", 1, type=int))
+    per_page = min(200, max(1, request.args.get("per_page", 50, type=int)))
+    search = request.args.get("search", "").strip()
+
     db = get_db()
-    rows = db.execute("SELECT * FROM employees").fetchall()
-    return jsonify([_row_to_dict(r) for r in rows]), 200
+
+    if search:
+        like = f"%{search}%"
+        params = (like, like, like, like, like, like, like)
+        where = (
+            "WHERE full_name LIKE ? OR job_title LIKE ? OR country LIKE ?"
+            " OR CAST(empid AS TEXT) LIKE ? OR CAST(salary AS TEXT) LIKE ?"
+            " OR doj LIKE ? OR dob LIKE ?"
+        )
+        total = db.execute(f"SELECT COUNT(*) FROM employees {where}", params).fetchone()[0]
+        rows = db.execute(
+            f"SELECT * FROM employees {where} ORDER BY empid LIMIT ? OFFSET ?",
+            (*params, per_page, (page - 1) * per_page),
+        ).fetchall()
+    else:
+        total = db.execute("SELECT COUNT(*) FROM employees").fetchone()[0]
+        rows = db.execute(
+            "SELECT * FROM employees ORDER BY empid LIMIT ? OFFSET ?",
+            (per_page, (page - 1) * per_page),
+        ).fetchall()
+
+    return jsonify({
+        "employees": [_row_to_dict(r) for r in rows],
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "pages": math.ceil(total / per_page) if total else 1,
+    }), 200
 
 
 @employee_bp.route("/<int:empid>", methods=["GET"])
@@ -275,3 +306,105 @@ def import_employees():
     except Exception as e:
         db.rollback()
         return jsonify({"error": f"Database error: {str(e)}"}), 400
+
+
+# ============ METRICS ENDPOINT ============
+
+@employee_bp.route("/metrics", methods=["GET"])
+def get_metrics():
+    db = get_db()
+
+    salary_by_country = [
+        {"country": r[0], "min": r[1], "max": r[2], "avg": round(r[3], 2), "count": r[4]}
+        for r in db.execute(
+            "SELECT country, MIN(salary), MAX(salary), AVG(salary), COUNT(*)"
+            " FROM employees GROUP BY country ORDER BY country"
+        ).fetchall()
+    ]
+
+    salary_by_title_country = [
+        {"job_title": r[0], "country": r[1], "avg": round(r[2], 2), "count": r[3]}
+        for r in db.execute(
+            "SELECT job_title, country, AVG(salary), COUNT(*)"
+            " FROM employees GROUP BY job_title, country ORDER BY job_title, country"
+        ).fetchall()
+    ]
+
+    headcount_by_title = [
+        {"job_title": r[0], "count": r[1]}
+        for r in db.execute(
+            "SELECT job_title, COUNT(*) AS cnt FROM employees"
+            " GROUP BY job_title ORDER BY cnt DESC"
+        ).fetchall()
+    ]
+
+    top_earners = [
+        {"full_name": r[0], "job_title": r[1], "country": r[2], "salary": r[3]}
+        for r in db.execute(
+            "SELECT full_name, job_title, country, salary FROM employees"
+            " ORDER BY salary DESC LIMIT 10"
+        ).fetchall()
+    ]
+
+    salary_distribution = [
+        {"bucket": r[0], "count": r[1]}
+        for r in db.execute(
+            """
+            SELECT
+              CASE
+                WHEN salary < 50000  THEN '1_<50k'
+                WHEN salary < 75000  THEN '2_50k-75k'
+                WHEN salary < 100000 THEN '3_75k-100k'
+                WHEN salary < 125000 THEN '4_100k-125k'
+                WHEN salary < 150000 THEN '5_125k-150k'
+                ELSE '6_150k+'
+              END AS bucket,
+              COUNT(*) AS cnt
+            FROM employees
+            GROUP BY bucket
+            ORDER BY bucket
+            """
+        ).fetchall()
+    ]
+    for item in salary_distribution:
+        item["bucket"] = item["bucket"][2:]
+
+    avg_tenure_by_country = [
+        {"country": r[0], "avg_tenure_years": round(r[1], 1)}
+        for r in db.execute(
+            "SELECT country,"
+            " AVG((julianday('now') - julianday(doj)) / 365.25) AS avg_tenure"
+            " FROM employees GROUP BY country ORDER BY country"
+        ).fetchall()
+    ]
+
+    summary_row = db.execute(
+        "SELECT COUNT(*), COUNT(DISTINCT country), AVG(salary), MAX(salary) FROM employees"
+    ).fetchone()
+
+    most_common_title = db.execute(
+        "SELECT job_title FROM employees GROUP BY job_title ORDER BY COUNT(*) DESC LIMIT 1"
+    ).fetchone()
+
+    highest_paying_country = db.execute(
+        "SELECT country FROM employees GROUP BY country ORDER BY AVG(salary) DESC LIMIT 1"
+    ).fetchone()
+
+    summary = {
+        "total_employees": summary_row[0],
+        "total_countries": summary_row[1],
+        "overall_avg_salary": round(summary_row[2], 2) if summary_row[2] else 0,
+        "highest_salary": summary_row[3] or 0,
+        "most_common_title": most_common_title[0] if most_common_title else None,
+        "highest_paying_country": highest_paying_country[0] if highest_paying_country else None,
+    }
+
+    return jsonify({
+        "salary_by_country": salary_by_country,
+        "salary_by_title_country": salary_by_title_country,
+        "headcount_by_title": headcount_by_title,
+        "top_earners": top_earners,
+        "salary_distribution": salary_distribution,
+        "avg_tenure_by_country": avg_tenure_by_country,
+        "summary": summary,
+    }), 200
