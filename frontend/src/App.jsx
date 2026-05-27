@@ -8,7 +8,11 @@ export default function App() {
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark)
+    if (dark) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
     localStorage.setItem('theme', dark ? 'dark' : 'light')
   }, [dark])
 

@@ -4,7 +4,7 @@ import { useDark } from '../../hooks/useDark'
 export default function SalaryDistribution({ data }) {
   const dark = useDark()
   const tickColor = dark ? '#9ca3af' : '#6b7280'
-  const gridColor = dark ? '#374151' : '#e5e7eb'
+  const gridColor = dark ? '#374151' : undefined
   const tooltipStyle = dark
     ? { backgroundColor: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }
     : {}
