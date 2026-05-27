@@ -22,7 +22,7 @@ def create_app(test_config=None):
     from routes import register_blueprints
     register_blueprints(app)
 
-    CORS(app, origins=["http://localhost:5173"])
+    CORS(app, origins=["http://localhost:5173", "https://salary-management-bnn9.onrender.com"])
 
     return app
 
