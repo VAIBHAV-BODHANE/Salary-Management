@@ -115,6 +115,7 @@ def init_db(app):
             conn.cursor().execute(f.read())
         conn.commit()
         conn.close()
+        print("postgres table created successfully!")
     else:
         conn = sqlite3.connect(
             app.config['DATABASE'],
