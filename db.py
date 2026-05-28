@@ -14,10 +14,11 @@ class DBWrapper:
         self._engine = engine
         self._persistent = persistent
 
-    @staticmethod
-    def _adapt(sql):
-        """Convert ? placeholders to %s for PostgreSQL."""
-        return sql.replace('?', '%s')
+    def _adapt(self, sql):
+        """Convert ? → %s and LIKE → ILIKE for PostgreSQL."""
+        if self._engine == 'postgresql':
+            return sql.replace('?', '%s').replace(' LIKE ', ' ILIKE ')
+        return sql
 
     def execute(self, sql, params=()):
         if self._engine == 'postgresql':

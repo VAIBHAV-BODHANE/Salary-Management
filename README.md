@@ -13,6 +13,29 @@ A full-stack employee salary management application built with **Flask** (backen
 
 ---
 
+## Live Demo
+
+The application is publicly hosted:
+
+| Layer | URL |
+|-------|-----|
+| Frontend (React) | https://salarymanagementfrontend.vercel.app/ |
+| Backend (Flask + Gunicorn) | Render web service |
+| Database | PostgreSQL on Render |
+
+---
+
+## Database
+
+| Environment | Engine | Config |
+|-------------|--------|--------|
+| Development | SQLite | No setup needed — `instance/salary.db` is created automatically on first run |
+| Production | PostgreSQL | Set `DATABASE_URL=postgresql://...` in your environment (or `.env` file) |
+
+The hosted deployment has a PostgreSQL database already provisioned on Render. When `DATABASE_URL` is present the app switches to PostgreSQL automatically; when it is absent SQLite is used. See [`.env.example`](.env.example) for the format.
+
+---
+
 ## Architecture
 
 ```
@@ -69,11 +92,14 @@ A full-stack employee salary management application built with **Flask** (backen
 
 ```
 salary_management/
-├── app.py                    # Flask app factory
-├── db.py                     # SQLite connection lifecycle
+├── app.py                    # Flask app factory + DB engine selection
+├── db.py                     # DBWrapper (SQLite & PostgreSQL), get_db, init_db
+├── wsgi.py                   # WSGI entry point for Gunicorn / uWSGI
 ├── requirements.txt          # Python dependencies
+├── .env.example              # Example environment variables (DATABASE_URL)
 ├── schema/
-│   └── employee.sql          # employees table definition
+│   ├── employee.sql          # SQLite table definition
+│   └── employee_pg.sql       # PostgreSQL table definition (SERIAL)
 ├── routes/
 │   ├── __init__.py           # blueprint registration
 │   ├── health.py             # GET /health
@@ -86,14 +112,24 @@ salary_management/
 │   ├── index.html
 │   ├── vite.config.js        # dev proxy → Flask
 │   ├── tailwind.config.js
+│   ├── .env.development      # VITE_API_URL for dev
+│   ├── .env.production       # VITE_API_URL for prod
 │   └── src/
 │       ├── App.jsx
-│       ├── api/client.js     # all fetch calls
-│       ├── hooks/            # useEmployees, useMetrics, useDark
+│       ├── main.jsx
+│       ├── api/client.js     # all fetch calls (importEmployees, getMetrics, …)
+│       ├── hooks/
+│       │   ├── useEmployees.js   # pagination, search, AbortController
+│       │   ├── useMetrics.js     # metrics fetch with AbortController
+│       │   └── useDark.js        # MutationObserver dark-mode hook
 │       └── components/
-│           ├── layout/       # TabBar
-│           ├── employees/    # table, modal, import, search, pagination
-│           └── metrics/      # charts, tables, summary cards
+│           ├── layout/           # TabBar
+│           ├── employees/        # EmployeesPage, EmployeeTable, EmployeeModal,
+│           │                     # ImportModal, SearchBar, Pagination
+│           └── metrics/          # MetricsPage, SummaryCards, SalaryByCountryChart,
+│                                 # SalaryDistribution, HeadcountChart, TopEarnersTable,
+│                                 # SalaryByTitleTable, AvgTenureChart
+├── salary-management.postman_collection.json
 ├── prompt.txt                # all user prompts from the build session
 ├── first_names.txt           # sample data (10,000 first names)
 ├── last_names.txt            # sample data (10,000 last names)
