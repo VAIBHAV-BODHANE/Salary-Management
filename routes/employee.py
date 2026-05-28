@@ -22,7 +22,7 @@ def create_employee():
         return jsonify({"error": "Missing fields", "fields": missing}), 400
 
     db = get_db()
-    cursor = db.execute(
+    empid = db.insert_returning_id(
         """
         INSERT INTO employees (full_name, job_title, country, salary, doj, dob)
         VALUES (?, ?, ?, ?, ?, ?)
@@ -31,7 +31,7 @@ def create_employee():
          body["salary"], body["doj"], body["dob"]),
     )
     db.commit()
-    return jsonify({"empid": cursor.lastrowid}), 201
+    return jsonify({"empid": empid}), 201
 
 
 @employee_bp.route("", methods=["GET"])
@@ -372,8 +372,7 @@ def get_metrics():
     avg_tenure_by_country = [
         {"country": r[0], "avg_tenure_years": round(r[1], 1)}
         for r in db.execute(
-            "SELECT country,"
-            " AVG((julianday('now') - julianday(doj)) / 365.25) AS avg_tenure"
+            f"SELECT country, {db.tenure_avg_expr()} AS avg_tenure"
             " FROM employees GROUP BY country ORDER BY country"
         ).fetchall()
     ]

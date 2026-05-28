@@ -1,45 +1,131 @@
-import sqlite3
 import os
+import re
+import sqlite3
 import weakref
+
 from flask import g, current_app
 
 
-def get_db():
-    if "db" not in g:
-        # For :memory: databases a persistent connection is stored on the app;
-        # each sqlite3.connect(":memory:") call creates a separate empty database,
-        # so all requests must share the one connection created during init_db.
-        persistent = getattr(current_app._get_current_object(), "_persistent_db", None)
-        if persistent is not None:
-            g.db = persistent
-        else:
-            g.db = sqlite3.connect(
-                current_app.config["DATABASE"],
-                detect_types=sqlite3.PARSE_DECLTYPES,
+class DBWrapper:
+    """Normalises sqlite3 and psycopg2 so routes need no engine-specific code."""
+
+    def __init__(self, conn, engine, persistent=False):
+        self._conn = conn
+        self._engine = engine
+        self._persistent = persistent
+
+    @staticmethod
+    def _adapt(sql):
+        """Convert ? placeholders to %s for PostgreSQL."""
+        return sql.replace('?', '%s')
+
+    def execute(self, sql, params=()):
+        if self._engine == 'postgresql':
+            cur = self._conn.cursor()
+            cur.execute(self._adapt(sql), params)
+            return cur
+        return self._conn.execute(sql, params)
+
+    def executemany(self, sql, rows):
+        if self._engine == 'postgresql':
+            from psycopg2.extras import execute_values
+            # execute_values needs "VALUES %s", not "VALUES (%s, %s, ...)"
+            adapted = re.sub(
+                r'VALUES\s*\([^)]+\)', 'VALUES %s',
+                self._adapt(sql), flags=re.IGNORECASE,
             )
-            g.db.row_factory = sqlite3.Row
+            cur = self._conn.cursor()
+            execute_values(cur, adapted, rows)
+            return cur
+        return self._conn.executemany(sql, rows)
+
+    def insert_returning_id(self, sql, params=()):
+        """Execute an INSERT and return the auto-generated primary key."""
+        if self._engine == 'postgresql':
+            cur = self._conn.cursor()
+            cur.execute(self._adapt(sql) + ' RETURNING empid', params)
+            return cur.fetchone()[0]
+        cursor = self._conn.execute(sql, params)
+        return cursor.lastrowid
+
+    def tenure_avg_expr(self):
+        """SQL fragment for average employee tenure in years."""
+        if self._engine == 'postgresql':
+            return "AVG(EXTRACT(EPOCH FROM (NOW() - doj::date)) / 31557600.0)"
+        return "AVG((julianday('now') - julianday(doj)) / 365.25)"
+
+    def commit(self):
+        self._conn.commit()
+
+    def rollback(self):
+        self._conn.rollback()
+
+    def close(self):
+        if not self._persistent:
+            self._conn.close()
+
+
+def get_db():
+    if 'db' not in g:
+        engine = current_app.config.get('DB_ENGINE', 'sqlite')
+
+        if engine == 'postgresql':
+            import psycopg2
+            import psycopg2.extras
+            conn = psycopg2.connect(
+                current_app.config['DATABASE_URL'],
+                cursor_factory=psycopg2.extras.DictCursor,
+            )
+            g.db = DBWrapper(conn, 'postgresql')
+        else:
+            # Reuse the single persistent connection for :memory: databases
+            # (each sqlite3.connect(":memory:") creates a separate empty DB).
+            persistent = getattr(current_app._get_current_object(), '_persistent_db', None)
+            if persistent is not None:
+                g.db = DBWrapper(persistent, 'sqlite', persistent=True)
+            else:
+                conn = sqlite3.connect(
+                    current_app.config['DATABASE'],
+                    detect_types=sqlite3.PARSE_DECLTYPES,
+                )
+                conn.row_factory = sqlite3.Row
+                g.db = DBWrapper(conn, 'sqlite')
     return g.db
 
 
 def close_db(e=None):
-    db = g.pop("db", None)
-    # Skip closing the shared persistent connection; it is closed by the
-    # weakref finalizer registered in init_db when the app is garbage-collected.
-    if db is not None and not getattr(current_app._get_current_object(), "_persistent_db", None):
-        db.close()
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()  # DBWrapper.close() skips persistent connections
 
 
 def init_db(app):
-    conn = sqlite3.connect(
-        app.config["DATABASE"],
-        detect_types=sqlite3.PARSE_DECLTYPES,
-    )
-    conn.row_factory = sqlite3.Row
-    schema_path = os.path.join(os.path.dirname(__file__), "schema", "employee.sql")
-    with open(schema_path) as f:
-        conn.executescript(f.read())
-    conn.commit()
+    engine = app.config.get('DB_ENGINE', 'sqlite')
+    schema_dir = os.path.join(os.path.dirname(__file__), 'schema')
 
-    if app.config["DATABASE"] == ":memory:":
-        app._persistent_db = conn
-        weakref.finalize(app, conn.close)
+    if engine == 'postgresql':
+        import psycopg2
+        import psycopg2.extras
+        conn = psycopg2.connect(
+            app.config['DATABASE_URL'],
+            cursor_factory=psycopg2.extras.DictCursor,
+        )
+        schema_path = os.path.join(schema_dir, 'employee_pg.sql')
+        with open(schema_path) as f:
+            conn.cursor().execute(f.read())
+        conn.commit()
+        conn.close()
+    else:
+        conn = sqlite3.connect(
+            app.config['DATABASE'],
+            detect_types=sqlite3.PARSE_DECLTYPES,
+        )
+        conn.row_factory = sqlite3.Row
+        schema_path = os.path.join(schema_dir, 'employee.sql')
+        with open(schema_path) as f:
+            conn.executescript(f.read())
+        conn.commit()
+
+        if app.config['DATABASE'] == ':memory:':
+            app._persistent_db = conn
+            weakref.finalize(app, conn.close)
