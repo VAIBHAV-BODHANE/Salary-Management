@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { importEmployees } from '../../api/client'
 
 const FILE_FIELDS = [
   { key: 'first_names', label: 'First Names', hint: 'first_names.txt — one name per line', accept: '.txt' },
@@ -30,9 +31,7 @@ export default function ImportModal({ onClose, onImported }) {
 
     setImporting(true)
     try {
-      const res = await fetch('/api/employees/import', { method: 'POST', body: formData })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || res.statusText)
+      const data = await importEmployees(formData)
       setResult(data.imported)
       onImported()
     } catch (err) {

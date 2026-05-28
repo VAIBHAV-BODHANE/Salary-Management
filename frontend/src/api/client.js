@@ -35,6 +35,10 @@ export function deleteEmployee(id) {
   return apiFetch(`/employees/${id}`, { method: 'DELETE' })
 }
 
+export function importEmployees(formData) {
+  return apiFetch('/employees/import', { method: 'POST', body: formData })
+}
+
 export function getMetrics(signal) {
   return apiFetch('/employees/metrics', { signal })
 }
